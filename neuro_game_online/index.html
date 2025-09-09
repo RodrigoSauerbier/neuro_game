@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Queda de 20% — Decida rápido! (online-v1)</title>
+  <link rel="stylesheet" href="style.css?v=online-v1" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="pair">BOVA11</div>
+      <div class="meta">
+        <span id="clock">00:10</span>
+        <span class="sep">•</span>
+        <span>Queda inicial: -20%</span>
+        <span class="sep">•</span>
+        <span class="ver">versão: online-v1</span>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="chart-card">
+        <img src="chart.png?v=online-v1" alt="gráfico" class="chart-img"/>
+      </section>
+
+      <section class="action-card">
+        <h1>O mercado despencou 20%!</h1>
+        <p>Decida em <strong>10 segundos</strong>: <strong>Comprar</strong> (aproveitar a queda) ou <strong>Vender</strong> (proteger capital).</p>
+        <div id="netwarn" class="warn" style="display:none"></div>
+        <div class="cta">
+          <button id="buyBtn" class="buy">Comprar</button>
+          <button id="sellBtn" class="sell">Vender</button>
+        </div>
+        <p id="status" class="status"></p>
+        <div class="divider"></div>
+        <h2>Placar da turma</h2>
+        <div class="bars">
+          <div class="bar">
+            <span>Compraram</span>
+            <div class="track"><div id="buyBar" class="fill" style="width:0%"></div></div>
+            <span id="buyPct">0%</span>
+          </div>
+          <div class="bar">
+            <span>Venderam</span>
+            <div class="track"><div id="sellBar" class="fill sell" style="width:0%"></div></div>
+            <span id="sellPct">0%</span>
+          </div>
+        </div>
+        <p class="small">Abra o <a href="results.html?v=online-v1" target="_blank">Painel do Apresentador</a> para projetar o placar.</p>
+      </section>
+    </main>
+  </div>
+
+<script>
+const VERSION = "online-v1";
+const NAMESPACE = "muka_54500a589b747420"; // CountAPI namespace exclusivo pro seu jogo
+const KEY_BUY = "comprar";
+const KEY_SELL = "vender";
+
+// util
+function toNum(v){ const n = Number(v); return Number.isFinite(n) ? n : 0; }
+function msg(m){ document.getElementById("status").textContent = m; }
+function warn(m){ const el = document.getElementById("netwarn"); el.style.display = "block"; el.textContent = m; }
+
+// relógio
+const DECISION_SECONDS = 10;
+let seconds = DECISION_SECONDS;
+function renderClock(){ document.getElementById("clock").textContent = "00:" + (seconds<10? "0"+seconds: seconds); }
+renderClock();
+const t = setInterval(()=>{ seconds--; renderClock(); if(seconds<=0){ clearInterval(t); disable(); msg("⏱️ Tempo esgotado!"); } },1000);
+
+function disable(){ document.getElementById("buyBtn").disabled=true; document.getElementById("sellBtn").disabled=true; }
+
+// CountAPI helpers
+async function countapiCreate(key){
+  // garante que a chave existe e começa em 0
+  await fetch(`https://api.countapi.xyz/create?namespace=${NAMESPACE}&key=${key}&value=0`);
+}
+async function countapiHit(key){
+  return fetch(`https://api.countapi.xyz/hit/${NAMESPACE}/${key}`).then(r=>r.json());
+}
+async function countapiGet(key){
+  return fetch(`https://api.countapi.xyz/get/${NAMESPACE}/${key}`).then(r=>r.json());
+}
+
+async function ensureKeys(){ try{ await countapiCreate(KEY_BUY); await countapiCreate(KEY_SELL); }catch(e){ /* ok */ } }
+async function vote(kind){
+  disable();
+  try{
+    await countapiHit(kind === "comprar" ? KEY_BUY : KEY_SELL);
+    msg(kind==="comprar" ? "🟢 Você escolheu COMPRAR." : "🔴 Você escolheu VENDER.");
+    refresh();
+  }catch(e){ warn("Falha ao votar. Verifique a internet."); }
+}
+
+function renderBars(buy,sell){
+  const total = toNum(buy)+toNum(sell);
+  const bp = total>0 ? Math.round(buy/total*100) : 0;
+  const sp = total>0 ? 100-bp : 0;
+  document.getElementById("buyBar").style.width = bp + "%";
+  document.getElementById("sellBar").style.width = sp + "%";
+  document.getElementById("buyPct").textContent = bp + "%";
+  document.getElementById("sellPct").textContent = sp + "%";
+}
+async function refresh(){
+  try{
+    const [b, s] = await Promise.all([countapiGet(KEY_BUY), countapiGet(KEY_SELL)]);
+    renderBars(b.value, s.value);
+  }catch(e){ /* silencioso */ }
+}
+
+document.getElementById("buyBtn").onclick = ()=>vote("comprar");
+document.getElementById("sellBtn").onclick = ()=>vote("vender");
+
+ensureKeys().then(refresh);
+setInterval(refresh, 1200);
+</script>
+</body>
+</html>
