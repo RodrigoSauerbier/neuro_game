@@ -55,8 +55,8 @@
 <script>
 
 const VERSION = "online-v3";
-const NAMESPACE = "muka_7d832cb81995";
-const API_BASE = "https://YOUR-SUBDOMAIN.workers.dev";
+const NAMESPACE = "muka_4cbaf2d48db8";
+const API_BASE = "https://black-field-8298.rodrigosauerbier.workers.dev";
 const KEY_BUY = "comprar";
 const KEY_SELL = "vender";
 const RESET_TOKEN = "muka2025";
@@ -71,12 +71,10 @@ async function apiGet(k) { return api(`/get?ns=${encodeURIComponent(NAMESPACE)}&
 async function apiSet(k,v) { return api(`/set?ns=${encodeURIComponent(NAMESPACE)}&key=${encodeURIComponent(k)}&value=${v}`); }
 
 
-// util
 function toNum(v){ const n = Number(v); return Number.isFinite(n) ? n : 0; }
 function msg(m){ document.getElementById("status").textContent = m; }
 function warn(m){ const el = document.getElementById("netwarn"); el.style.display = "block"; el.textContent = m; }
 
-// relógio
 const DECISION_SECONDS = 10;
 let seconds = DECISION_SECONDS;
 function renderClock(){ document.getElementById("clock").textContent = "00:" + (seconds<10? "0"+seconds: seconds); }
@@ -88,11 +86,11 @@ function disable(){ document.getElementById("buyBtn").disabled=true; document.ge
 async function vote(kind){
   disable();
   try {
-    await apiHit(kind === "comprar" ? KEY_BUY : KEY_SELL);
+    await apiHit(kind === "comprar" ? "comprar" : "vender");
     msg(kind==="comprar" ? "🟢 Você escolheu COMPRAR." : "🔴 Você escolheu VENDER.");
     refresh();
   } catch (e) {
-    warn("Falha ao votar. Verifique o link do servidor (API_BASE) ou tente outra rede.");
+    warn("Falha ao votar. Verifique a conexão ou tente novamente.");
   }
 }
 
@@ -107,7 +105,7 @@ function renderBars(buy,sell){
 }
 async function refresh(){
   try {
-    const [b, s] = await Promise.all([apiGet(KEY_BUY), apiGet(KEY_SELL)]);
+    const [b, s] = await Promise.all([apiGet("comprar"), apiGet("vender")]);
     renderBars(b.value ?? 0, s.value ?? 0);
   } catch (e) {}
 }

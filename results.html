@@ -38,8 +38,8 @@
 <script>
 
 const VERSION = "online-v3";
-const NAMESPACE = "muka_7d832cb81995";
-const API_BASE = "https://YOUR-SUBDOMAIN.workers.dev";
+const NAMESPACE = "muka_4cbaf2d48db8";
+const API_BASE = "https://black-field-8298.rodrigosauerbier.workers.dev";
 const KEY_BUY = "comprar";
 const KEY_SELL = "vender";
 const RESET_TOKEN = "muka2025";
@@ -68,15 +68,15 @@ function render(buy,sell){
 }
 async function tick(){
   try {
-    const [b,s] = await Promise.all([apiGet(KEY_BUY), apiGet(KEY_SELL)]);
+    const [b,s] = await Promise.all([apiGet("comprar"), apiGet("vender")]);
     render(b.value ?? 0, s.value ?? 0);
-  } catch (e) {}
+  }catch(e){}
 }
 async function resetCounts(){
   const token = prompt("Token para zerar (pergunte ao apresentador):");
   if(!token || token !== RESET_TOKEN) return;
-  await apiSet(KEY_BUY, 0);
-  await apiSet(KEY_SELL, 0);
+  await apiSet("comprar", 0);
+  await apiSet("vender", 0);
   tick();
 }
 document.getElementById("resetBtn").onclick = resetCounts;
