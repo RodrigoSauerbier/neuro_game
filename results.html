@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Painel — Placar da Turma (online-v1)</title>
-  <link rel="stylesheet" href="style.css?v=online-v1" />
+  <title>Painel — Placar da Turma (online-v2)</title>
+  <link rel="stylesheet" href="style.css?v=online-v2" />
 </head>
 <body>
   <div class="app">
     <header class="topbar">
       <div class="pair">BOVA11</div>
-      <div class="meta"><strong>Painel do apresentador</strong> <span class="sep">•</span> <span class="ver">versão: online-v1</span></div>
+      <div class="meta"><strong>Painel do apresentador</strong> <span class="sep">•</span> <span class="ver">versão: online-v2</span></div>
     </header>
     <main class="grid single">
       <section class="action-card">
@@ -36,17 +36,45 @@
   </div>
 
 <script>
-const VERSION = "online-v1";
-const NAMESPACE = "muka_54500a589b747420";
+
+const VERSION = "online-v2";
+const NAMESPACE = "muka_270347657862dcdc";
 const KEY_BUY = "comprar";
 const KEY_SELL = "vender";
 const RESET_TOKEN = "muka2025";
 
-// helpers
-function toNum(v){ const n = Number(v); return Number.isFinite(n) ? n : 0; }
-async function countapiCreate(key){ await fetch(`https://api.countapi.xyz/create?namespace=${NAMESPACE}&key=${key}&value=0`); }
-async function countapiGet(key){ return fetch(`https://api.countapi.xyz/get/${NAMESPACE}/${key}`).then(r=>r.json()); }
-async function countapiSet(key,val){ return fetch(`https://api.countapi.xyz/set/${NAMESPACE}/${key}?value=${val}`).then(r=>r.json()); }
+// Fallback hosts (some redes bloqueiam um ou outro)
+const HOSTS = ["https://api.countapi.xyz", "https://countapi.xyz"];
+
+function qs(){
+  return "&_=" + Date.now(); // cache buster
+}
+
+async function fetchFirst(urlPath, opts={}){
+  for(const h of HOSTS){
+    try {
+      const r = await fetch(h + urlPath + (urlPath.includes("?") ? "&" : "?") + "_=" + Date.now(), {mode:"cors", cache:"no-store", ...opts});
+      if(r.ok) return await r.json();
+    } catch(e) {}
+  }
+  throw new Error("all-hosts-failed");
+}
+
+async function countapiCreate(key){
+  try{ await fetchFirst(`/create?namespace=${encodeURIComponent(NAMESPACE)}&key=${encodeURIComponent(key)}&value=0`); }catch(e){}
+}
+async function countapiHit(key){
+  return fetchFirst(`/hit/${encodeURIComponent(NAMESPACE)}/${encodeURIComponent(key)}`);
+}
+async function countapiGet(key){
+  return fetchFirst(`/get/${encodeURIComponent(NAMESPACE)}/${encodeURIComponent(key)}`);
+}
+async function countapiSet(key,val){
+  return fetchFirst(`/set/${encodeURIComponent(NAMESPACE)}/${encodeURIComponent(key)}?value=${val}`);
+}
+
+
+function toNum(v){ const n = Number(v); return Number.isFinite(n)? n: 0; }
 
 function render(buy,sell){
   const total = toNum(buy)+toNum(sell);
@@ -61,7 +89,7 @@ function render(buy,sell){
 async function tick(){
   try{
     const [b,s] = await Promise.all([countapiGet(KEY_BUY), countapiGet(KEY_SELL)]);
-    render(b.value, s.value);
+    render(b.value ?? 0, s.value ?? 0);
   }catch(e){}
 }
 async function resetCounts(){
